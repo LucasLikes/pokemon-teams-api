@@ -56,7 +56,7 @@ describe('PokeApiService', () => {
         jest.spyOn(httpService, 'get').mockReturnValueOnce(throwError(() => new Error('404 Not Found')));
 
         await expect(service.validatePokemon('invalido')).rejects.toThrowError(
-            "Pokémon 'invalido' não encontrado na PokéAPI",
+            "Pokemon 'invalido' não encontrado na PokeAPI",
         );
     });
 });

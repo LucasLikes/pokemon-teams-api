@@ -7,26 +7,32 @@ import { NotFoundException } from '@nestjs/common';
 
 describe('TrainersService', () => {
   let service: TrainersService;
-  let trainerRepository: jest.Mocked<Repository<Trainer>>;
+  let trainerRepository: {
+    create: jest.Mock;
+    save: jest.Mock;
+    findOne: jest.Mock;
+    delete: jest.Mock;
+  };
 
   beforeEach(async () => {
+    trainerRepository = {
+      create: jest.fn().mockImplementation((dto) => dto),
+      save: jest.fn().mockImplementation(async (trainer) => ({ id: 1, ...trainer })),
+      findOne: jest.fn(),
+      delete: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TrainersService,
         {
           provide: getRepositoryToken(Trainer),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-            save: jest.fn(),
-            delete: jest.fn(),
-          },
+          useValue: trainerRepository,
         },
       ],
     }).compile();
 
     service = module.get<TrainersService>(TrainersService);
-    trainerRepository = module.get(getRepositoryToken(Trainer));
   });
 
   it('should be defined', () => {
@@ -36,26 +42,27 @@ describe('TrainersService', () => {
   describe('create', () => {
     it('should create and return a trainer', async () => {
       const dto = { name: 'Ash', city: 'Pallet Town' };
-      const savedTrainer = { id: 1, ...dto };
+      const expectedTrainer = { id: 1, ...dto };
 
-      trainerRepository.save.mockResolvedValue(savedTrainer as Trainer);
+      const result = await service.create(dto);
 
-      const result = await service.create(dto as any);
-      expect(result).toEqual(savedTrainer);
+      expect(trainerRepository.create).toHaveBeenCalledWith(dto);
       expect(trainerRepository.save).toHaveBeenCalledWith(dto);
+      expect(result).toEqual(expectedTrainer);
     });
   });
 
   describe('findOne', () => {
     it('should return a trainer when found', async () => {
-      const trainer = { id: 1, name: 'Ash', city: 'Pallet Town' } as Trainer;
-
+      const trainer = { id: 1, name: 'Ash', city: 'Pallet Town' };
       trainerRepository.findOne.mockResolvedValue(trainer);
 
       const result = await service.findOne(1);
+
       expect(result).toEqual(trainer);
       expect(trainerRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
+        relations: ['teams'],
       });
     });
 
